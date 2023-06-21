@@ -1,3 +1,4 @@
+// app.js
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -8,6 +9,7 @@ const indexRouter = require('./routes/index');
 const postsRouter = require('./routes/posts');
 const commentsRouter = require('./routes/comments');
 const usersRouter = require('./routes/users');
+const authRouter = require("./routes/auth");
 const connect = require('./schemas');
 
 app.use(express.json());
@@ -17,6 +19,7 @@ app.use('/', indexRouter);
 app.use('/posts', postsRouter);
 app.use('/comments', commentsRouter);
 app.use('/users', usersRouter);
+app.use("/auth", authRouter);
 
 // 몽고디비 연결
 connect();
