@@ -8,7 +8,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: '인증되지 않은 요청입니다.' });
   }
 
-  jwt.verify(token, 'your-secret-key', (err, user) => {
+  jwt.verify(token, 'custom-secret-key', (err, user) => {
     if (err) {
       return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
     }

@@ -25,6 +25,7 @@ router.post('/', authenticateToken, async (req, res) => {
       res.json({ commentId: comment._id });
     }
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: '서버 오류' });
   }
 });

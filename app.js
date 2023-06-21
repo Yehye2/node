@@ -30,7 +30,7 @@ app.use(cors());
 
 // 오류 처리 미들웨어
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.log(err);
   res.status(500).json({ error: '서버 오류' });
 });
 
