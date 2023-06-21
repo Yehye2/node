@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const postSchema = require('../schemas/post.js');
+const Post = require('../schemas/post');
+const authenticateToken = require('../middleware/authenticateToken');
 
-// 전체 게시글 목록 조회 API
 router.get('/', (req, res) => {
-  postSchema
-    .find()
+  Post.find({}, 'title author nickname createdAt')
+    .populate('author', 'nickname')
     .sort({ createdAt: -1 })
     .then(posts => {
       res.json(posts);
@@ -16,13 +16,11 @@ router.get('/', (req, res) => {
     });
 });
 
-// 게시글 작성 API
-router.post('/', (req, res) => {
-  console.log("/posts");
-  const { title, author, password, content } = req.body;
-  const post = new postSchema({ title, author, password, content });
-  post
-    .save()
+router.post('/', authenticateToken, (req, res) => {
+  const { title, content } = req.body;
+  const author = req.user.id;
+  const post = new Post({ title, author, content });
+  post.save()
     .then(savedPost => {
       res.json({ postId: savedPost._id });
     })
@@ -32,11 +30,9 @@ router.post('/', (req, res) => {
     });
 });
 
-// 게시글 조회 API
 router.get('/:postId', (req, res) => {
-  console.log("/:postId");
-  postSchema
-    .findById(req.params.postId)
+  Post.findById(req.params.postId, 'title author nickname createdAt content')
+    .populate('author', 'nickname')
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
@@ -50,22 +46,18 @@ router.get('/:postId', (req, res) => {
     });
 });
 
-// 게시글 수정 API
-router.put('/:postId', (req, res) => {
-  postSchema
-    .findById(req.params.postId)
+router.put('/:postId', authenticateToken, (req, res) => {
+  Post.findById(req.params.postId)
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
       } else {
-        if (post.password !== req.body.password) {
-          res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
+        if (post.author.toString() !== req.user.id) {
+          res.status(401).json({ error: '해당 게시글을 수정할 권한이 없습니다.' });
         } else {
           post.title = req.body.title;
-          post.author = req.body.author;
           post.content = req.body.content;
-          post
-            .save()
+          post.save()
             .then(updatedPost => {
               res.json(updatedPost);
             })
@@ -82,19 +74,16 @@ router.put('/:postId', (req, res) => {
     });
 });
 
-// 게시글 삭제 API
-router.delete('/:postId', (req, res) => {
-  postSchema
-    .findById(req.params.postId)
+router.delete('/:postId', authenticateToken, (req, res) => {
+  Post.findById(req.params.postId)
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
       } else {
-        if (post.password !== req.body.password) {
-          res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
+        if (post.author.toString() !== req.user.id) {
+          res.status(401).json({ error: '해당 게시글을 삭제할 권한이 없습니다.' });
         } else {
-          post
-            .remove()
+          post.remove()
             .then(() => {
               res.json({ success: true });
             })

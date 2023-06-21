@@ -4,7 +4,7 @@ const User = require('../schemas/user');
 const path = require('path');
 
 // 회원가입 API
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   const { email, nickname, password, confirmPassword } = req.body;
 
   if (password !== confirmPassword) {
@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
     });
     return;
   }
-
+  
   if (password.length < 4 || password.includes(nickname)) {
     res.status(400).json({
       errorMessage: "비밀번호는 최소 4자 이상이어야 하며, 닉네임과 동일한 값이 포함될 수 없습니다.",
@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
   res.status(201).json({});
 });
 
-router.get("/", (req, res) => {
+router.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, '../public/signup.html'));
 });
 
