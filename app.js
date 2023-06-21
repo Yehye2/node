@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const path = require('path');
+const bodyParser = require('body-parser');
 
 // 라우터 연결
 const indexRouter = require('./routes/index');
@@ -14,6 +15,7 @@ const connect = require('./schemas');
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
 
 app.use('/', indexRouter);
 app.use('/posts', postsRouter);
