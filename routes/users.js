@@ -1,12 +1,10 @@
-// routes/users.js
-
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-
-const User = require("../schemas/user");
+const User = require('../schemas/user');
+const path = require('path');
 
 // 회원가입 API
-router.post("/users", async (req, res) => {
+router.post("/", async (req, res) => {
   const { email, nickname, password, confirmPassword } = req.body;
 
   if (password !== confirmPassword) {
@@ -16,12 +14,24 @@ router.post("/users", async (req, res) => {
     return;
   }
 
-  // email 또는 nickname이 동일한 데이터가 있는지 확인하기 위해 가져온다.
+  if (!/^[a-zA-Z0-9]{3,}$/.test(nickname)) {
+    res.status(400).json({
+      errorMessage: "닉네임은 최소 3자 이상이며, 알파벳 대소문자와 숫자로만 구성되어야 합니다.",
+    });
+    return;
+  }
+
+  if (password.length < 4 || password.includes(nickname)) {
+    res.status(400).json({
+      errorMessage: "비밀번호는 최소 4자 이상이어야 하며, 닉네임과 동일한 값이 포함될 수 없습니다.",
+    });
+    return;
+  }
+
   const existsUsers = await User.findOne({
     $or: [{ email }, { nickname }],
   });
   if (existsUsers) {
-    // NOTE: 보안을 위해 인증 메세지는 자세히 설명하지 않습니다.
     res.status(400).json({
       errorMessage: "이메일 또는 닉네임이 이미 사용중입니다.",
     });
@@ -34,5 +44,8 @@ router.post("/users", async (req, res) => {
   res.status(201).json({});
 });
 
+router.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/signup.html'));
+});
 
 module.exports = router;
