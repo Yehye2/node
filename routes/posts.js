@@ -1,12 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const Post = require('../schemas/post');
+const { Op } = require('sequelize');
+const { Post, User } = require('../models');
 const authenticateToken = require('../middleware/authenticateToken');
 
 router.get('/', (req, res) => {
-  Post.find({}, 'title author nickname createdAt')
-    .populate('author', 'nickname')
-    .sort({ createdAt: -1 })
+  Post.findAll({
+    attributes: ['title', 'author', 'nickname', 'createdAt'],
+    include: [
+      {
+        model: User,
+        as: 'author',
+        attributes: ['nickname'],
+      },
+    ],
+    order: [['createdAt', 'DESC']],
+  })
     .then(posts => {
       res.json(posts);
     })
@@ -18,11 +27,10 @@ router.get('/', (req, res) => {
 
 router.post('/', authenticateToken, (req, res) => {
   const { title, content } = req.body;
-  const author = req.user.id;
-  const post = new Post({ title, author, content });
-  post.save()
+  const authorId = req.user.id;
+  Post.create({ title, content, authorId })
     .then(savedPost => {
-      res.json({ postId: savedPost._id });
+      res.json({ postId: savedPost.id });
     })
     .catch(err => {
       console.error(err);
@@ -31,8 +39,16 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 router.get('/:postId', (req, res) => {
-  Post.findById(req.params.postId, 'title author nickname createdAt content')
-    .populate('author', 'nickname')
+  Post.findByPk(req.params.postId, {
+    attributes: ['title', 'author', 'nickname', 'createdAt', 'content'],
+    include: [
+      {
+        model: User,
+        as: 'author',
+        attributes: ['nickname'],
+      },
+    ],
+  })
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
@@ -47,12 +63,12 @@ router.get('/:postId', (req, res) => {
 });
 
 router.put('/:postId', authenticateToken, (req, res) => {
-  Post.findById(req.params.postId)
+  Post.findByPk(req.params.postId)
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
       } else {
-        if (post.author.toString() !== req.user.id) {
+        if (post.authorId !== req.user.id) {
           res.status(401).json({ error: '해당 게시글을 수정할 권한이 없습니다.' });
         } else {
           post.title = req.body.title;
@@ -75,15 +91,15 @@ router.put('/:postId', authenticateToken, (req, res) => {
 });
 
 router.delete('/:postId', authenticateToken, (req, res) => {
-  Post.findById(req.params.postId)
+  Post.findByPk(req.params.postId)
     .then(post => {
       if (!post) {
         res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
       } else {
-        if (post.author.toString() !== req.user.id) {
+        if (post.authorId !== req.user.id) {
           res.status(401).json({ error: '해당 게시글을 삭제할 권한이 없습니다.' });
         } else {
-          post.remove()
+          post.destroy()
             .then(() => {
               res.json({ success: true });
             })

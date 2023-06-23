@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../schemas/user');
+const { User } = require('../models');
 const path = require('path');
 
 // 회원가입 API
@@ -28,20 +28,27 @@ router.post("/signup", async (req, res) => {
     return;
   }
 
-  const existsUsers = await User.findOne({
-    $or: [{ email }, { nickname }],
-  });
-  if (existsUsers) {
-    res.status(400).json({
-      errorMessage: "이메일 또는 닉네임이 이미 사용중입니다.",
+  try {
+    const existsUsers = await User.findOne({
+      where: {
+        [Sequelize.Op.or]: [{ email }, { nickname }],
+      },
     });
-    return;
+  
+    if (existsUsers) {
+      res.status(400).json({
+        errorMessage: "이메일 또는 닉네임이 이미 사용중입니다.",
+      });
+      return;
+    }
+  
+    await User.create({ email, nickname, password });
+  
+    res.status(201).json({});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ errorMessage: "서버 오류" });
   }
-
-  const user = new User({ email, nickname, password });
-  await user.save();
-
-  res.status(201).json({});
 });
 
 router.get("/signup", (req, res) => {
